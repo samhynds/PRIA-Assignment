@@ -8,3 +8,8 @@
 #fpsCounter {
     margin-top: 25px;
 }
+
+#fpsMeter {
+    width: 50px;
+    font-size: 18px;
+}

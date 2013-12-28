@@ -75,22 +75,47 @@ function Animator(obj, prop, endValue, time){
 
 }
 
-window.addEventListener('keyDown',function(event){
+window.addEventListener('keydown',function(event){
     switch(event.keyCode){
-        case 37: player1.move(-10, 0); break;
-        case 38: player1.move(0, -10); break;
-        case 39: player1.move(10, 0); break;
-        case 40: player1.move(0, 10); break;
+        case 37: player1.move(-7, 0); break;
+        case 38: player1.move(0, -50); break;
+        case 39: player1.move(7, 0); break;
+        case 40: player1.move(0, 50); break;
         default: return false;
     }
     event.preventDefault();
     return true;
 });
 
-var player1 = new Player();
-
-
-// The loop goes through all the objects in the scene array, and asks them to redraw themselves
-
 // To add something to the scene, you push it to the array
 // for example: scene.push(player1);
+var player1 = new Player();
+player1.draw();
+scene.push(player1);
+
+
+var frameNumber = 1;
+
+function gameLoop(){
+    // Store current time, and calculate ms passed since last time
+    var timeNow = +new Date(),
+        msDiff = timeNow - prevLoopTime;
+
+    // Calculate and display fps every five frames
+    if(frameNumber % 5 == 0) {
+        fpsMeter.value = Math.round(1000/msDiff);
+    }
+
+    // The loop goes through all the objects in the scene array, and asks them to redraw themselves
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    for(i = 0, l = scene.length; i < l; i++){
+        scene[i].draw();
+    }
+
+    // WAIT
+    prevLoopTime = timeNow;
+    requestAnimFrame(gameLoop);
+    frameNumber++;
+}
+gameLoop();
+
