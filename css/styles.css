@@ -4,3 +4,7 @@
     height: 720px;
     margin: 0 auto;
 }
+
+#fpsCounter {
+    margin-top: 25px;
+}
