@@ -17,3 +17,9 @@
     width: 50px;
     font-size: 18px;
 }
+
+#levelTxt {
+    width: 1280px;
+    height: 400px;
+    margin-bottom: 100px;
+}

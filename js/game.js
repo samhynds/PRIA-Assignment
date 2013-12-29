@@ -2,7 +2,8 @@ var canvas = document.getElementById('gameCanvas'),
     context = canvas.getContext('2d'),
     scene = [], // Contains the names of all the objects in the scene
     prevLoopTime = +new Date(),
-    fpsMeter = document.querySelector('#fpsMeter');
+    fpsMeter = document.querySelector('#fpsMeter'),
+    levelDataText = document.querySelector('#levelTxt');
 
 // Animation polyfill by Paul Irish
 window.requestAnimFrame = (function(){
@@ -15,7 +16,6 @@ window.requestAnimFrame = (function(){
             window.setTimeout(callback, 1000 / 60);
         };
 })();
-
 
 
 // Loads a level from an external json file
@@ -45,6 +45,25 @@ function Level() {
 
     this.draw = function(levelData) {
 
+        // Change this if possible! 15 is hardcoded as the number of arrays in the JSON object
+        // This should be calculated from the object, something like: levelData.length
+        levelDataText.value += "Attempting Loop of levelData \n";
+        for(var i = 1; i <= 15; i++) {
+            // First loop goes through each row
+            levelDataText.value += "\nRow " + i + "\n";
+
+            for(var j = 0; j < levelData[i].length; j++) {
+                // Second loop goes through each value in that row
+                levelDataText.value += levelData[i][j] + " => " + this.numToTile(levelData[i][j]) + " || ";
+            }
+        }
+
+    }
+
+    // Converts the number in an array to its associated tile type
+    this.numToTile = function(number) {
+        var tiles = ["air", "grass", "dirt", "stone", "water", "lava", "brick"];
+        return tiles[number];
     }
 
 }
