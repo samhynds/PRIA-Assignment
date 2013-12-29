@@ -17,6 +17,38 @@ window.requestAnimFrame = (function(){
 })();
 
 
+
+// Loads a level from an external json file
+//
+// Create a Level object, then call Level.load("LEVELNAME"). This returns the JSON file
+// that contains the level data. Pass this data onto the Level.draw method.
+
+function Level() {
+
+    // Loads level data from an external level JSON file.
+    // When specifying levelFile, the levels folder and .jsonare added to the
+    // string automatically, just specify the file name. For example: "level_1"
+    this.load = function(levelFile) {
+
+        var levelData = null;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "levels/" + levelFile + ".json", false);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                levelData = JSON.parse(xhr.responseText);
+            }
+        }
+        xhr.send();
+        return levelData;
+    }
+
+    this.draw = function(levelData) {
+
+    }
+
+}
+
 function Player(x, y, w, h) {
     // Setup initial variables
     this.x = x || 10;

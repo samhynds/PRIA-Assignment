@@ -5,6 +5,10 @@
     margin: 0 auto;
 }
 
+#gameCanvas {
+    background: #a4d2df;
+}
+
 #fpsCounter {
     margin-top: 25px;
 }

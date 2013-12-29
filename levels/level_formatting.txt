@@ -1,0 +1,31 @@
+JSON file for level 1, formatting is as follows:
+
+You can only view 26(.666) blocks across the x axis, and 15 across the y axis
+at any one time.
+
+i.e. That is the size of the game screen (1280x720 with blocks of size 42px)
+
+The grid below is a representation of the map in the format of multiple arrays.
+Each line (1,2,3...) represents a row on the screen with 1 being the top most row
+and 15 being ground level.
+
+Each of the rows holds an array, and within that array are the values for each individual
+block. So the first block on row 1 will be 0 (air). This number then represents a certain type of
+block, as described below.
+
+?? You can also specify if a block is non-collidable by adding "N" after the block number
+?? It is assumed that a block IS collidable unless otherwise specified.
+
+
+If a row contains an empty array it will be assumed that the entire row is air.
+
+==========================
+BLOCK TYPES
+==========================
+
+0 = Air (nothing)
+1 = Grass
+2 = Dirt
+3 = Stone
+4 = Water
+
