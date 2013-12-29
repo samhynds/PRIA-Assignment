@@ -48,13 +48,24 @@ function Level() {
         // Change this if possible! 15 is hardcoded as the number of arrays in the JSON object
         // This should be calculated from the object, something like: levelData.length
         levelDataText.value += "Attempting Loop of levelData \n";
-        for(var i = 1; i <= 15; i++) {
+        for(var Yi = 1; Yi <= 15; Yi++) {
             // First loop goes through each row
-            levelDataText.value += "\nRow " + i + "\n";
+            if(levelData[Yi].length !== 0) {
+                levelDataText.value += "\n\nRow " + Yi + "\n";
+            }
+            for(var Xi = 0; Xi < levelData[Yi].length; Xi++) {
 
-            for(var j = 0; j < levelData[i].length; j++) {
+                var x = Xi * 42;
+                var y = Yi * 42;
+
                 // Second loop goes through each value in that row
-                levelDataText.value += levelData[i][j] + " => " + this.numToTile(levelData[i][j]) + " || ";
+                if(levelData[Yi].length !== 0) {
+                    levelDataText.value += Xi + ": " + levelData[Yi][Xi] + " => " + this.numToTile(levelData[Yi][Xi])
+                     +  " || Will be drawn at:" + x + ", " + y + " || \n";
+                }
+
+//                var tileset = Array;
+//                tileset.push(new Tile(this.numToTile(levelData[Yi][Xi]), Xi, Yi));
             }
         }
 
@@ -68,10 +79,49 @@ function Level() {
 
 }
 
+// This class is for each individual tile on screen. tileType is the name of the tile as worked out
+// by the numToTile method in the Level class. Xi is the index of the x value, i.e. which value in the
+// array is currently being looked at (first, second, third...), and Yi is the index of the Y axis, or
+// in other words, the row or number of which array is being looked at.
+
+function Tile(x, y, w, h) {
+
+    this.x = x || 0;
+    this.y = y || 630;
+    this.w = w || 42;
+    this.h = h || 42;
+
+    this.draw = function() {
+        context.beginPath();
+        context.rect(this.x, this.y, this.w, this.h);
+        context.fillStyle = '#94d088';
+        context.fill();
+
+        context.beginPath();
+        context.rect(this.x, this.y + 12, this.w, this.h - 12);
+        context.fillStyle = '#ab846c';
+        context.fill();
+
+
+//        var x = 0;
+//        var y = 630;
+//        var width = 42;
+//        var height = 42;
+//        var imageObj = new Image();
+//
+//        imageObj.onload = function() {
+//            context.drawImage(imageObj, x, y, width, height);
+//        };
+//
+//        imageObj.src = 'img/tiles/grass.png';
+
+    }
+}
+
 function Player(x, y, w, h) {
     // Setup initial variables
     this.x = x || 10;
-    this.y = y || 620;
+    this.y = y || 540;
     this.w = w || 40;
     this.h = h || 90;
 
@@ -141,8 +191,16 @@ window.addEventListener('keydown',function(event){
 // To add something to the scene, you push it to the array
 // for example: scene.push(player1);
 var player1 = new Player();
+var tile = new Tile();
+var tile2 = new Tile(42);
+
 player1.draw();
 scene.push(player1);
+
+tile.draw();
+tile2.draw();
+scene.push(tile);
+scene.push(tile2);
 
 
 var frameNumber = 1;
@@ -159,7 +217,7 @@ function gameLoop(){
 
     // The loop goes through all the objects in the scene array, and asks them to redraw themselves
     context.clearRect(0, 0, canvas.width, canvas.height);
-    for(i = 0, l = scene.length; i < l; i++){
+    for(var i = 0, l = scene.length; i < l; i++){
         scene[i].draw();
     }
 
