@@ -103,7 +103,7 @@ function collisionTest(a, b) {
 
 function Cloud(x, y, w, h) {
 
-    this.w = w || Math.floor(Math.random() * 500) + 50;
+    this.w = w || Math.floor(Math.random() * 400) + 50;
     this.h = h || Math.floor(Math.random() * 200) + 50;
     this.x = x || 0 - this.w;
     this.y = y || Math.floor(Math.random() * 200) -100;
@@ -156,7 +156,7 @@ function Tile(type, x, y, w, h) {
         if(type == "stone") {
             context.beginPath();
             context.rect(this.x, this.y, this.w, this.h);
-            context.fillStyle = '#878787';
+            context.fillStyle = '#6f6f6f';
             context.fill();
         }
 
@@ -202,6 +202,33 @@ function Player(x, y, w, h) {
 
 }
 
+function Wall(x, y, w, h) {
+    // Setup initial variables
+    this.x = x || 100;
+    this.y = y || 480;
+    this.w = w || 40;
+    this.h = h || 150;
+
+    this.move = function(x, y) {
+        this.x += x;
+        this.y += y;
+    }
+
+    this.resize = function(w, h) {
+        this.w = w;
+        this.h = h;
+    }
+
+    this.draw = function() {
+        context.beginPath();
+        context.rect(this.x, this.y, this.w, this.h);
+        context.fillStyle = '#666666';
+        context.fill();
+    }
+
+}
+
+
 function Animator(obj, prop, endValue, time){
     this.obj = obj;
     this.prop = prop;
@@ -246,15 +273,21 @@ window.addEventListener('keydown',function(event){
     return true;
 });
 
+
+
+// ADD OBJECTS TO THE ENVIRONMENT
+
 // To add something to the scene, you push it to the array
 // for example: scene.push(player1);
 var player1 = new Player();
+var wall1 = new Wall();
 
 
 player1.draw();
 scene.push(player1);
 
-
+wall1.draw();
+scene.push(wall1);
 
 // Add clouds
 var cloud = [];
@@ -265,6 +298,14 @@ for(var i = 0; i < 6; i++) {
     cloud[i].draw();
     cloudAnimations[i] = new Animator(cloud[i], "x", 1280,  Math.floor(Math.random() * 50000) + 20000);
 }
+
+
+// Load Map
+var lev = new Level;
+var levelData = lev.load('level1');
+lev.draw(levelData);
+
+
 
 // Game loop below
 
@@ -304,6 +345,13 @@ function gameLoop(){
        }
 
    }
+
+    if(collisionTest(player1, wall1)) {
+        levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1! \n\n";
+    }
+
+    levelDataText.scrollTop = levelDataText.scrollHeight;
+
 
     // WAIT
     prevLoopTime = timeNow;
