@@ -49,10 +49,12 @@ function Level() {
         // This should be calculated from the object, something like: levelData.length
         levelDataText.value += "Attempting Loop of levelData \n";
         for(var Yi = 1; Yi <= 15; Yi++) {
+
             // First loop goes through each row
             if(levelData[Yi].length !== 0) {
                 levelDataText.value += "\n\nRow " + Yi + "\n";
             }
+
             for(var Xi = 0; Xi < levelData[Yi].length; Xi++) {
 
                 var x = Xi * 42;
@@ -72,6 +74,10 @@ function Level() {
             }
         }
 
+    }
+
+    this.clear = function() {
+        scene = [];
     }
 
     // Converts the number in an array to its associated tile type
@@ -94,6 +100,25 @@ function collisionTest(a, b) {
         );
 
 }
+
+function Cloud(x, y, w, h) {
+
+    this.w = w || Math.floor(Math.random() * 500) + 50;
+    this.h = h || Math.floor(Math.random() * 200) + 50;
+    this.x = x || 0 - this.w;
+    this.y = y || Math.floor(Math.random() * 200) -100;
+
+    var randOpac = Math.random() + 0.1;
+
+    this.draw = function() {
+
+        context.beginPath();
+        context.rect(this.x, this.y, this.w, this.h);
+        context.fillStyle = 'rgba(225,225,225,' + randOpac + ')';
+        context.fill();
+    }
+}
+
 
 // This class is for each individual tile on screen. tileType is the name of the tile as worked out
 // by the numToTile method in the Level class. Xi is the index of the x value, i.e. which value in the
@@ -138,7 +163,7 @@ function Tile(type, x, y, w, h) {
         if(type == "water") {
             context.beginPath();
             context.rect(this.x, this.y, this.w, this.h);
-            context.fillStyle = '#38a4e2';
+            context.fillStyle = 'rgba(0, 156, 255, 0.5)';
             context.fill();
         }
 
@@ -229,6 +254,20 @@ var player1 = new Player();
 player1.draw();
 scene.push(player1);
 
+
+
+// Add clouds
+var cloud = [];
+var cloudAnimations = [];
+
+for(var i = 0; i < 6; i++) {
+    cloud[i] = new Cloud(Math.floor(Math.random() * 1200));
+    cloud[i].draw();
+    cloudAnimations[i] = new Animator(cloud[i], "x", 1280,  Math.floor(Math.random() * 50000) + 20000);
+}
+
+// Game loop below
+
 var frameNumber = 1;
 
 function gameLoop(){
@@ -246,6 +285,25 @@ function gameLoop(){
     for(var i = 0, l = scene.length; i < l; i++){
         scene[i].draw();
     }
+
+
+   for(var j = 0; j < cloudAnimations.length; j++) {
+       cloudAnimations[j].update();
+
+       // If the clouds are off-screen, reset them to start again
+       if(cloudAnimations[j].finished == true) {
+//           cloud[j].x = 0 - cloud[j].w;
+//           cloudAnimations[j].finished = false;
+//           cloudAnimations[j].startTime = Date.now();
+//           cloudAnimations[j].startValue = 0 - cloud[j].w;
+//           cloudAnimations[j].valueRange = 1280;
+
+           cloud[j] = new Cloud();
+           cloudAnimations[j] = new Animator(cloud[j], "x", 1280, Math.floor(Math.random() * 50000) + 20000);
+
+       }
+
+   }
 
     // WAIT
     prevLoopTime = timeNow;
