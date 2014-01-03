@@ -131,6 +131,7 @@ function Tile(type, x, y, w, h) {
     this.y = y || 630;
     this.w = w || 42;
     this.h = h || 42;
+    this.type = type;
 
     this.draw = function() {
 
@@ -176,16 +177,36 @@ function Tile(type, x, y, w, h) {
     }
 }
 
+function Gravity(accel, objects) {
+    this.accel = accel;
+    this.objects = objects;
+
+}
+
 function Player(x, y, w, h) {
     // Setup initial variables
     this.x = x || 10;
-    this.y = y || 540;
+    this.y = y || 530;
     this.w = w || 40;
     this.h = h || 90;
+
+    this.lastMovement = null;
 
     this.move = function(x, y) {
         this.x += x;
         this.y += y;
+    }
+
+    // Moves in the opposite direction specified in lastMovement. Used for collisions.
+    this.oppositeMove = function(lastMovement) {
+        switch(lastMovement){
+            case "left": this.move(5, 0); break;
+            case "up": this.move(0, 5); break;
+            case "right": this.move(-5, 0); break;
+            case "down": this.move(0, -5); break;
+            default: return false;
+        }
+        return true;
     }
 
     this.resize = function(w, h) {
@@ -197,32 +218,6 @@ function Player(x, y, w, h) {
         context.beginPath();
         context.rect(this.x, this.y, this.w, this.h);
         context.fillStyle = '#000';
-        context.fill();
-    }
-
-}
-
-function Wall(x, y, w, h) {
-    // Setup initial variables
-    this.x = x || 100;
-    this.y = y || 480;
-    this.w = w || 40;
-    this.h = h || 150;
-
-    this.move = function(x, y) {
-        this.x += x;
-        this.y += y;
-    }
-
-    this.resize = function(w, h) {
-        this.w = w;
-        this.h = h;
-    }
-
-    this.draw = function() {
-        context.beginPath();
-        context.rect(this.x, this.y, this.w, this.h);
-        context.fillStyle = '#666666';
         context.fill();
     }
 
@@ -263,10 +258,10 @@ function Animator(obj, prop, endValue, time){
 
 window.addEventListener('keydown',function(event){
     switch(event.keyCode){
-        case 37: player1.move(-7, 0); break;
-        case 38: player1.move(0, -50); break;
-        case 39: player1.move(7, 0); break;
-        case 40: player1.move(0, 50); break;
+        case 37: player1.move(-5, 0); player1.lastMovement = "left"; break;
+        case 38: player1.move(0, -5); player1.lastMovement = "up"; break;
+        case 39: player1.move(5, 0); player1.lastMovement = "right"; break;
+        case 40: player1.move(0, 5); player1.lastMovement = "down"; break;
         default: return false;
     }
     event.preventDefault();
@@ -280,14 +275,10 @@ window.addEventListener('keydown',function(event){
 // To add something to the scene, you push it to the array
 // for example: scene.push(player1);
 var player1 = new Player();
-var wall1 = new Wall();
-
 
 player1.draw();
 scene.push(player1);
 
-wall1.draw();
-scene.push(wall1);
 
 // Add clouds
 var cloud = [];
@@ -304,7 +295,6 @@ for(var i = 0; i < 6; i++) {
 var lev = new Level;
 var levelData = lev.load('level1');
 lev.draw(levelData);
-
 
 
 // Game loop below
@@ -325,6 +315,15 @@ function gameLoop(){
     context.clearRect(0, 0, canvas.width, canvas.height);
     for(var i = 0, l = scene.length; i < l; i++){
         scene[i].draw();
+
+        // This checks for collisions between the player and each object in the scene array
+        if(i > 0 && scene[i].type !== "air") {
+            if(collisionTest(player1, scene[i])) {
+                levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name + " " + scene[i].type + "\n\n";
+                player1.oppositeMove(player1.lastMovement);
+            }
+        }
+
     }
 
 
@@ -333,22 +332,13 @@ function gameLoop(){
 
        // If the clouds are off-screen, reset them to start again
        if(cloudAnimations[j].finished == true) {
-//           cloud[j].x = 0 - cloud[j].w;
-//           cloudAnimations[j].finished = false;
-//           cloudAnimations[j].startTime = Date.now();
-//           cloudAnimations[j].startValue = 0 - cloud[j].w;
-//           cloudAnimations[j].valueRange = 1280;
-
            cloud[j] = new Cloud();
            cloudAnimations[j] = new Animator(cloud[j], "x", 1280, Math.floor(Math.random() * 50000) + 20000);
-
        }
 
    }
 
-    if(collisionTest(player1, wall1)) {
-        levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1! \n\n";
-    }
+
 
     levelDataText.scrollTop = levelDataText.scrollHeight;
 
