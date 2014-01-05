@@ -196,6 +196,7 @@ function Gravity(objectsArray) {
     this.apply = function(gravity) {
         for(var i = 0; i < objectsArray.length; i++) {
             if(objectsArray[i].collide == false) {
+                objectsArray[i].lastMovement = "down";
                 objectsArray[i].y += gravity;
             }
         }
@@ -209,11 +210,6 @@ function Player(x, y, w, h) {
     this.y = y || 450;
     this.w = w || 40;
     this.h = h || 90;
-
-    // Gravity & Jumping variables
-    this.velocity = 0;
-    this.gravity = 10;
-    this.jumping = false;
 
     this.lastMovement = "down";
     this.collide = false;
@@ -241,8 +237,10 @@ function Player(x, y, w, h) {
     }
 
     this.jump = function() {
+        this.y += -100;
+    }
 
-
+    function futureCollisionTest(a, b, nextMovement) {
 
     }
 
