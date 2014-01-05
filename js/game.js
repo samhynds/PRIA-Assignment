@@ -3,7 +3,8 @@ var canvas = document.getElementById('gameCanvas'),
     scene = [], // Contains the names of all the objects in the scene
     prevLoopTime = +new Date(),
     fpsMeter = document.querySelector('#fpsMeter'),
-    levelDataText = document.querySelector('#levelTxt');
+    levelDataText = document.querySelector('#levelTxt'),
+    GRAVITATIONAL_ACCELERATION = 100; // Measured in pixels per second
 
 // Animation polyfill by Paul Irish
 window.requestAnimFrame = (function(){
@@ -128,10 +129,11 @@ function Cloud(x, y, w, h) {
 function Tile(type, x, y, w, h) {
 
     this.x = x || 0;
-    this.y = y || 630;
+    this.y = y || 200;
     this.w = w || 42;
     this.h = h || 42;
     this.type = type;
+    this.collision = true;
 
     this.draw = function() {
 
@@ -166,6 +168,8 @@ function Tile(type, x, y, w, h) {
             context.rect(this.x, this.y, this.w, this.h);
             context.fillStyle = 'rgba(0, 156, 255, 0.5)';
             context.fill();
+            this.collision = false;
+
         }
 
         if(type == "lava") {
@@ -173,24 +177,46 @@ function Tile(type, x, y, w, h) {
             context.rect(this.x, this.y, this.w, this.h);
             context.fillStyle = '#d27922';
             context.fill();
+            this.collision = false;
+
+        }
+
+        if(type == "air") {
+            this.collision = false;
         }
     }
 }
 
-function Gravity(accel, objects) {
-    this.accel = accel;
-    this.objects = objects;
+// This class applies gravity to an array of objects. Objects that are affected by
+// gravity must have a move function. accel is measured in pixels per frame
+
+function Gravity(objectsArray) {
+    this.objectsArray = objectsArray;
+
+    this.apply = function(gravity) {
+        for(var i = 0; i < objectsArray.length; i++) {
+            if(objectsArray[i].collide == false) {
+                objectsArray[i].y += gravity;
+            }
+        }
+    }
 
 }
 
 function Player(x, y, w, h) {
     // Setup initial variables
     this.x = x || 10;
-    this.y = y || 530;
+    this.y = y || 450;
     this.w = w || 40;
     this.h = h || 90;
 
-    this.lastMovement = null;
+    // Gravity & Jumping variables
+    this.velocity = 0;
+    this.gravity = 10;
+    this.jumping = false;
+
+    this.lastMovement = "down";
+    this.collide = false;
 
     this.move = function(x, y) {
         this.x += x;
@@ -212,6 +238,12 @@ function Player(x, y, w, h) {
     this.resize = function(w, h) {
         this.w = w;
         this.h = h;
+    }
+
+    this.jump = function() {
+
+
+
     }
 
     this.draw = function() {
@@ -259,7 +291,7 @@ function Animator(obj, prop, endValue, time){
 window.addEventListener('keydown',function(event){
     switch(event.keyCode){
         case 37: player1.move(-5, 0); player1.lastMovement = "left"; break;
-        case 38: player1.move(0, -5); player1.lastMovement = "up"; break;
+        case 38: player1.jump(); player1.lastMovement = "up"; break;
         case 39: player1.move(5, 0); player1.lastMovement = "right"; break;
         case 40: player1.move(0, 5); player1.lastMovement = "down"; break;
         default: return false;
@@ -269,6 +301,38 @@ window.addEventListener('keydown',function(event){
 });
 
 
+function checkCollisions() {
+    // This checks for collisions between the player and each object in the scene array (except for
+    // the player colliding with itself (i > 0) and tiles which have collision set to false).
+    for(var i = 0, l = scene.length; i < l; i++){
+        if(i > 0 && scene[i].collision == true) {
+            if(collisionTest(player1, scene[i])) {
+                levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name +  " [" + i + "] " + scene[i].type + "\n\n";
+                player1.oppositeMove(player1.lastMovement);
+                player1.collide = true;
+//                console.log("collision: " + player1.collide);
+            } else {
+                player1.collide = false;
+//                console.log("collision: " + player1.collide);
+
+            }
+
+        }
+    }
+}
+
+function drawClouds() {
+    for(var j = 0; j < cloudAnimations.length; j++) {
+        cloudAnimations[j].update();
+
+        // If the clouds are off-screen, reset them to start again
+        if(cloudAnimations[j].finished == true) {
+            cloud[j] = new Cloud();
+            cloudAnimations[j] = new Animator(cloud[j], "x", 1280, Math.floor(Math.random() * 50000) + 20000);
+        }
+
+    }
+}
 
 // ADD OBJECTS TO THE ENVIRONMENT
 
@@ -278,6 +342,8 @@ var player1 = new Player();
 
 player1.draw();
 scene.push(player1);
+
+var gravity = new Gravity([player1]);
 
 
 // Add clouds
@@ -315,30 +381,13 @@ function gameLoop(){
     context.clearRect(0, 0, canvas.width, canvas.height);
     for(var i = 0, l = scene.length; i < l; i++){
         scene[i].draw();
-
-        // This checks for collisions between the player and each object in the scene array
-        if(i > 0 && scene[i].type !== "air") {
-            if(collisionTest(player1, scene[i])) {
-                levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name + " " + scene[i].type + "\n\n";
-                player1.oppositeMove(player1.lastMovement);
-            }
-        }
-
     }
 
+    checkCollisions();
+    drawClouds();
+    gravity.apply(GRAVITATIONAL_ACCELERATION * (msDiff/1000));
 
-   for(var j = 0; j < cloudAnimations.length; j++) {
-       cloudAnimations[j].update();
-
-       // If the clouds are off-screen, reset them to start again
-       if(cloudAnimations[j].finished == true) {
-           cloud[j] = new Cloud();
-           cloudAnimations[j] = new Animator(cloud[j], "x", 1280, Math.floor(Math.random() * 50000) + 20000);
-       }
-
-   }
-
-
+//    levelDataText.value += "This loop, objects should move down " + GRAVITATIONAL_ACCELERATION * (msDiff/1000) + " pixels.\n";
 
     levelDataText.scrollTop = levelDataText.scrollHeight;
 
