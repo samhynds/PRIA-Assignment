@@ -4,7 +4,7 @@ var canvas = document.getElementById('gameCanvas'),
     prevLoopTime = +new Date(),
     fpsMeter = document.querySelector('#fpsMeter'),
     levelDataText = document.querySelector('#levelTxt'),
-    GRAVITATIONAL_ACCELERATION = 100; // Measured in pixels per second
+    GRAVITATIONAL_ACCELERATION = 200; // Measured in pixels per second
 
 // Animation polyfill by Paul Irish
 window.requestAnimFrame = (function(){
@@ -25,6 +25,9 @@ window.requestAnimFrame = (function(){
 // that contains the level data. Pass this data onto the Level.draw method.
 
 function Level() {
+
+    this.cameraX = 0;
+    this.cameraY = 0;
 
     // Loads level data from an external level JSON file.
     // When specifying levelFile, the levels folder and .jsonare added to the
@@ -87,6 +90,13 @@ function Level() {
         return tiles[number];
     }
 
+    this.moveCamera = function(x, y) {
+        // move all objects in the scene array -x amount and -y
+        for(var i = 1; i < scene.length; i++) {
+            scene[i].x += x;
+            scene[i].y += y;
+        }
+    }
 }
 
 // This function tests if two objects (a, b) are colliding by checking their width, height
@@ -192,14 +202,25 @@ function Tile(type, x, y, w, h) {
 
 function Gravity(objectsArray) {
     this.objectsArray = objectsArray;
+    this.enabled = true;
 
     this.apply = function(gravity) {
         for(var i = 0; i < objectsArray.length; i++) {
             if(objectsArray[i].collide == false) {
                 objectsArray[i].lastMovement = "down";
-                objectsArray[i].y += gravity;
+
+                    objectsArray[i].y += gravity;
+
             }
         }
+    }
+
+    this.enable = function() {
+        GRAVITATIONAL_ACCELERATION = 200;
+    }
+
+    this.disable = function() {
+        GRAVITATIONAL_ACCELERATION = 0;
     }
 
 }
@@ -212,23 +233,42 @@ function Player(x, y, w, h) {
     this.h = h || 90;
 
     this.lastMovement = "down";
+    this.jumping = false;
     this.collide = false;
 
     this.move = function(x, y) {
-        this.x += x;
-        this.y += y;
+
+        // Before moving, check if the player(this), is going to collide with the scene
+        // if the player moves by this.x, this.y
+
+            this.x += x;
+            this.y += y;
+
     }
 
     // Moves in the opposite direction specified in lastMovement. Used for collisions.
     this.oppositeMove = function(lastMovement) {
         switch(lastMovement){
-            case "left": this.move(5, 0); break;
+            case "left": this.move(15, 0); break;
             case "up": this.move(0, 5); break;
-            case "right": this.move(-5, 0); break;
-            case "down": this.move(0, -5); break;
+            case "right": this.move(-15, 0); break;
+            case "down": this.move(0, -1); break;
             default: return false;
         }
         return true;
+    }
+
+    this.futureCollisionTest = function(a, b, nextMovement) {
+
+        // returns true if collision
+        var willCollide = !(
+            ((a.y + nextMovement[1] + a.h) < (b.y)) ||
+                (a.y + nextMovement[1] > (b.y + b.h)) ||
+                ((a.x + nextMovement[0] + a.w) < b.x) ||
+                (a.x + nextMovement[0] > (b.x + b.w))
+            );
+
+        return willCollide;
     }
 
     this.resize = function(w, h) {
@@ -237,11 +277,16 @@ function Player(x, y, w, h) {
     }
 
     this.jump = function() {
-        this.y += -100;
-    }
+        if(this.jumping == false) {
+            this.y += -100;
+            this.jumping = true;
+        }
 
-    function futureCollisionTest(a, b, nextMovement) {
+        if(this.collide = true) {
+            this.jumping = false;
+        }
 
+        gravity.enable();
     }
 
     this.draw = function() {
@@ -288,13 +333,14 @@ function Animator(obj, prop, endValue, time){
 
 window.addEventListener('keydown',function(event){
     switch(event.keyCode){
-        case 37: player1.move(-5, 0); player1.lastMovement = "left"; break;
-        case 38: player1.jump(); player1.lastMovement = "up"; break;
-        case 39: player1.move(5, 0); player1.lastMovement = "right"; break;
+        case 37: player1.move(-5, 0); player1.lastMovement = "left"; lev.moveCamera(5 , 0);  break;
+        case 38: player1.jump(); player1.lastMovement = "up";  break;
+        case 39: player1.move(5, 0); player1.lastMovement = "right"; lev.moveCamera(-5 , 0); break;
         case 40: player1.move(0, 5); player1.lastMovement = "down"; break;
         default: return false;
     }
     event.preventDefault();
+
     return true;
 });
 
@@ -306,10 +352,49 @@ function checkCollisions() {
         if(i > 0 && scene[i].collision == true) {
             if(collisionTest(player1, scene[i])) {
                 levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name +  " [" + i + "] " + scene[i].type + "\n\n";
+
                 player1.oppositeMove(player1.lastMovement);
+                gravity.disable();
+
                 player1.collide = true;
 //                console.log("collision: " + player1.collide);
             } else {
+                player1.collide = false;
+//                console.log("collision: " + player1.collide);
+
+            }
+
+        }
+    }
+}
+
+function findTileAtCoords(x, y) {
+    for(var i = 1; i < scene.length; i++) {
+        console.log("is " + x + ", " + y + " within " + scene[i].x + " and " + (scene[i].x + 42) + ", " + scene[i].y + " and " + (scene[i].y + 42) + "?");
+        if(scene[i].x > x) {
+            console.log("--------");
+            console.log(scene[i].x + " is greater than " + x);
+            console.log(scene[i].type);
+            console.log("YES");
+            break;
+        }
+    }
+}
+
+function groundCollision() {
+
+    for(var i = 0, l = scene.length; i < l; i++){
+        if(i > 0 && scene[i].collision == true) {
+            if(collisionTest(player1, scene[i])) {
+                levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name +  " [" + i + "] " + scene[i].type + "\n\n";
+                player1.oppositeMove(player1.lastMovement);
+                gravity.disable();
+                player1.collide = true;
+//                console.log("collision: " + player1.collide);
+            } else {
+//                if(tile below player is non collidable) {
+//                    enable gravity
+//                }
                 player1.collide = false;
 //                console.log("collision: " + player1.collide);
 
@@ -381,13 +466,14 @@ function gameLoop(){
         scene[i].draw();
     }
 
-    checkCollisions();
+    //checkCollisions();
+    groundCollision();
     drawClouds();
     gravity.apply(GRAVITATIONAL_ACCELERATION * (msDiff/1000));
 
-//    levelDataText.value += "This loop, objects should move down " + GRAVITATIONAL_ACCELERATION * (msDiff/1000) + " pixels.\n";
-
     levelDataText.scrollTop = levelDataText.scrollHeight;
+
+    // Move camera view with player
 
 
     // WAIT
