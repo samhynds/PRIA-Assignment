@@ -332,16 +332,26 @@ function Player(x, y, w, h) {
     }
 
     this.attack = function() {
-        var bullet = new Bullet();
-        bullet = bullet.shoot(this.x, this.y);
+        var bullet = new Bullet(this.x + 40, this.y + 60);
+        bullet.draw();
         this.bullets.push(bullet);
+        scene.push(bullet);
     }
 
 }
 
-function Bullet() {
-    this.shoot = function(x, y) {
+function Bullet(x, y) {
 
+    this.x = x;
+    this.y = y;
+    this.w = 4;
+    this.h = 4;
+
+    this.draw = function() {
+        context.beginPath();
+        context.arc(this.x, this.y, 4, 0, 2 * Math.PI, false);
+        context.fillStyle = '#fff';
+        context.fill();
     }
 }
 
@@ -388,6 +398,7 @@ function Enemy(type, x, y, w, h) {
     this.GRAVITATIONAL_ACCELERATION = 2;
     this.lastMovement = "down";
     this.collide = false;
+    this.dead = false;
 
     this.move = function(x, y) {
         // Before moving, check if the player(this), is going to collide with the scene
@@ -473,6 +484,13 @@ function Enemy(type, x, y, w, h) {
             context.fillStyle = '#fff';
             context.fill();
         }
+
+        if(this.dead == true) {
+            context.beginPath();
+            context.rect(this.x, this.y, this.w * 2, this.h);
+            context.fillStyle = 'rgba(0,130,205,0.7)';
+            context.fill();
+        }
     }
 
 }
@@ -516,6 +534,7 @@ window.addEventListener('keydown',function(event){
         case 38: player1.jump(); player1.lastMovement = "up";  break;
         case 39: player1.move(5, 0); player1.lastMovement = "right"; lev.moveCamera(-5 , 0); break;
         case 40: player1.move(0, 5); player1.lastMovement = "down"; break;
+        case 88: player1.attack(); break;
         default: return false;
     }
     event.preventDefault();
@@ -583,6 +602,12 @@ function drawClouds() {
             cloudAnimations[j] = new Animator(cloud[j], "x", 1280, Math.floor(Math.random() * 50000) + 20000);
         }
 
+    }
+}
+
+function drawBullets() {
+    for(var i = 0; i < player1.bullets.length; i++) {
+        player1.bullets[i].x += 5;
     }
 }
 
@@ -663,21 +688,32 @@ function gameLoop(){
         }
 
         for(var e = 0; e < enemy.length; e++) {
-            if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h) !== undefined) {
-                if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h).collision == true) {
-                    enemy[e].move(0, -42);
+            if(enemy[e] !== null) {
+                if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h) !== undefined) {
+                    if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h).collision == true) {
+                        enemy[e].move(0, -42);
+                    }
                 }
-            }
 
-            if(player1.health > 0) {
-                if(collisionTest(enemy[e], player1)) {
-                    player1.health -= 0.001;
-                } else if(player1.health <= 100) {
-                    // health regen
-                    player1.health += 0.0001;
+                if(player1.health > 0) {
+                    if(collisionTest(enemy[e], player1)) {
+                        player1.health -= 0.001;
+                    } else if(player1.health <= 100) {
+                        // health regen
+                        player1.health += 0.0001;
+                    }
+                } else {
+                    UI.gameOver();
                 }
-            } else {
-                UI.gameOver();
+
+                // check if bullets collide with enemies
+                for(var b = 0; b < player1.bullets.length; b++) {
+                    if(collisionTest(player1.bullets[b], enemy[e])) {
+                        player1.bullets.splice(0,1);
+                        enemy[e].dead = true;
+                        enemy.splice(e, 1);
+                    }
+                }
             }
         }
 
@@ -690,6 +726,7 @@ function gameLoop(){
 
     groundCollision(gravityArray);
     drawClouds();
+    drawBullets();
     //gravity.apply(GRAVITATIONAL_ACCELERATION * (msDiff/1000));
     levelDataText.scrollTop = levelDataText.scrollHeight;
 
