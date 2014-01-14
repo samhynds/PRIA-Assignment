@@ -258,6 +258,9 @@ function Player(x, y, w, h) {
     this.collide = false;
     this.GRAVITATIONAL_ACCELERATION = 2;
 
+    this.health = 250;
+    this.bullets = [];
+
     this.move = function(x, y) {
 
         // Before moving, check if the player(this), is going to collide with the scene
@@ -318,14 +321,60 @@ function Player(x, y, w, h) {
     }
 
     this.draw = function() {
-        context.beginPath();
-        context.rect(this.x, this.y, this.w, this.h);
-        context.fillStyle = '#000';
-        context.fill();
+//        context.beginPath();
+//        context.rect(this.x, this.y, this.w, this.h);
+//        context.fillStyle = 'rgba';
+//        context.fill();
+        var img = new Image();
+        img.src = 'img/characters/soldier_single.png';
+        context.drawImage(img, this.x, this.y + 19);
+
     }
 
+    this.attack = function() {
+        var bullet = new Bullet();
+        bullet = bullet.shoot(this.x, this.y);
+        this.bullets.push(bullet);
+    }
 
+}
 
+function Bullet() {
+    this.shoot = function(x, y) {
+
+    }
+}
+
+function UserInterface() {
+    this.drawHealth = function(health) {
+        // Health bar
+        context.beginPath();
+        context.rect(50, 20, health, 15);
+        if(health < 100) {
+            context.fillStyle = '#ae3636';
+
+        } else {
+            context.fillStyle = '#35c131';
+        }
+        context.fill();
+
+        context.fillStyle = '#000';
+
+        context.fillText("HP: " + health, 320, 30);
+
+    }
+
+    this.gameOver = function() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.beginPath();
+        context.rect(0, 0, 1280, 672);
+        context.fillStyle = '#ae3636';
+        context.fill();
+
+        context.fillStyle = '#000';
+        context.font="30px Arial";
+        context.fillText("Game Over!!", 640, 200);
+    }
 }
 
 function Enemy(type, x, y, w, h) {
@@ -399,10 +448,31 @@ function Enemy(type, x, y, w, h) {
     }
 
     this.draw = function() {
-        context.beginPath();
-        context.rect(this.x, this.y, this.w, this.h);
-        context.fillStyle = '#fff';
-        context.fill();
+
+        if(this.type == "ghost") {
+            var img = new Image();
+            img.src = 'img/characters/ghost.png';
+            context.drawImage(img, this.x, this.y + 19);
+        }
+
+        if(this.type == "bat") {
+            var img = new Image();
+            img.src = 'img/characters/bat.png';
+            context.drawImage(img, this.x, this.y + 19);
+        }
+
+        if(this.type == "eye") {
+            var img = new Image();
+            img.src = 'img/characters/eye.png';
+            context.drawImage(img, this.x, this.y + 19);
+        }
+
+        if(this.type == undefined) {
+            context.beginPath();
+            context.rect(this.x, this.y, this.w, this.h);
+            context.fillStyle = '#fff';
+            context.fill();
+        }
     }
 
 }
@@ -481,7 +551,7 @@ function findTileAtCoords(x, y) {
     for(var i = 1; i < scene.length; i++) {
 //        console.log("is " + x + ", " + y + " within " + scene[i].x + " and " + (scene[i].x + 42) + ", " + scene[i].y + " and " + (scene[i].y + 42) + "?");
         if(x >= scene[i].x && x < scene[i].x + 42 && y >= scene[i].y && y < scene[i].y + 42 ) {
-           return scene[i].type;
+           return scene[i];
         }
     }
 }
@@ -493,22 +563,14 @@ function groundCollision(object) {
             if(collisionTest(player1, scene[i])) {
                 levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name +  " [" + i + "] " + scene[i].type + "\n\n";
                 player1.oppositeMove(player1.lastMovement);
-                //gravity.disable();
                 for(var j = 0; j < object.length; j++) {
                     object[j].collide = true;
                 }
-//                console.log("collision: " + player1.collide);
-            } else {
-//                if(tile below player is non collidable) {
-//                    enable gravity
-//                }
-//                player1.collide = false;
-//                console.log("collision: " + player1.collide);
+            }
 
             }
 
         }
-    }
 }
 
 function drawClouds() {
@@ -533,15 +595,15 @@ var player1 = new Player();
 player1.draw();
 scene.push(player1);
 
-var enemy1 = new Enemy("zombie", 1210, 364);
+var enemy1 = new Enemy("eye", 1210, 364);
 enemy1.draw();
 scene.push(enemy1);
 
-var enemy2 = new Enemy("zombie", 910, 407);
+var enemy2 = new Enemy("bat", 910, 407);
 enemy2.draw();
 scene.push(enemy2);
 
-var enemy3 = new Enemy("zombie", 250, 450);
+var enemy3 = new Enemy("ghost", 250, 450);
 enemy3.draw();
 scene.push(enemy3);
 
@@ -561,11 +623,12 @@ for(var i = 0; i < 6; i++) {
 }
 
 
+var UI = new UserInterface();
+
 // Load Map
 var lev = new Level;
 var levelData = lev.load('level1');
 lev.draw(levelData);
-
 
 // Game loop below
 
@@ -581,14 +644,41 @@ function gameLoop(){
         fpsMeter.value = Math.round(1000/msDiff);
     }
 
+
+
     // The loop goes through all the objects in the scene array, and asks them to redraw themselves
     // it also contains the gravity and collisions logic
     context.clearRect(0, 0, canvas.width, canvas.height);
+
+    UI.drawHealth(player1.health);
+
+
     for(var i = 0, l = scene.length; i < l; i++){
         scene[i].draw();
 
-        if(findTileAtCoords(player1.x + player1.w/2, player1.y + player1. h + 1) == "air") {
-            player1.collide = false;
+        if(findTileAtCoords(player1.x + player1.w/2, player1.y + player1.h + 1) !== undefined) {
+            if(findTileAtCoords(player1.x + player1.w/2, player1.y + player1.h + 1).collision == false) {
+                player1.collide = false;
+            }
+        }
+
+        for(var e = 0; e < enemy.length; e++) {
+            if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h) !== undefined) {
+                if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h).collision == true) {
+                    enemy[e].move(0, -42);
+                }
+            }
+
+            if(player1.health > 0) {
+                if(collisionTest(enemy[e], player1)) {
+                    player1.health -= 0.001;
+                } else if(player1.health <= 100) {
+                    // health regen
+                    player1.health += 0.0001;
+                }
+            } else {
+                UI.gameOver();
+            }
         }
 
         if(scene[i].collide == false) {
@@ -596,6 +686,7 @@ function gameLoop(){
             scene[i].lastMovement = "down";
         }
     }
+
 
     groundCollision(gravityArray);
     drawClouds();
