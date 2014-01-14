@@ -9,11 +9,8 @@
     background: #7ad2ec;
 }
 
-#fpsCounter {
+input[type=text] {
     margin-top: 25px;
-}
-
-#fpsMeter {
     width: 50px;
     font-size: 18px;
 }

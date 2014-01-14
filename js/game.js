@@ -3,7 +3,9 @@ var canvas = document.getElementById('gameCanvas'),
     scene = [], // Contains the names of all the objects in the scene
     prevLoopTime = +new Date(),
     fpsMeter = document.querySelector('#fpsMeter'),
+    timer = document.querySelector('#timer'),
     levelDataText = document.querySelector('#levelTxt'),
+    score = 0,
     GRAVITATIONAL_ACCELERATION = 100; // Measured in pixels per second
 
 // Animation polyfill by Paul Irish
@@ -374,16 +376,30 @@ function UserInterface() {
 
     }
 
-    this.gameOver = function() {
+    this.gameOver = function(bonusScore, win) {
         context.clearRect(0, 0, canvas.width, canvas.height);
         context.beginPath();
         context.rect(0, 0, 1280, 672);
-        context.fillStyle = '#ae3636';
-        context.fill();
+        if(win) {
+            context.fillStyle = '#51e482';
+            context.fill();
 
-        context.fillStyle = '#000';
-        context.font="30px Arial";
-        context.fillText("Game Over!!", 640, 200);
+            context.fillStyle = '#000';
+            context.font="30px Arial";
+            context.fillText("Congratulations!!", 540, 200);
+            context.font="20px Arial";
+            context.fillText("Score = " + Math.round((score + bonusScore + player1.health) * 100), 540, 300);
+        } else {
+            context.fillStyle = '#ae3636';
+            context.fill();
+
+            context.fillStyle = '#000';
+            context.font="30px Arial";
+            context.fillText("Game Over!!", 540, 200);
+            context.font="20px Arial";
+            context.fillText("Score = " + Math.round((score + bonusScore + player1.health) * 100), 540, 300);
+        }
+
     }
 }
 
@@ -493,6 +509,26 @@ function Enemy(type, x, y, w, h) {
         }
     }
 
+}
+
+function levelEnd(x,y) {
+
+    this.x = x;
+    this.y = y;
+
+    this.draw = function() {
+        context.fillStyle="#fff843";
+        context.beginPath();
+        context.moveTo(this.x, this.y);
+        context.lineTo(this.x+70,this.y);
+        context.lineTo(this.x+35,this.y+50);
+        context.moveTo(this.x+5, this.y+35);
+        context.lineTo(this.x+35,this.y - 15);
+        context.lineTo(this.x+70,this.y+35);
+
+        context.closePath();
+        context.fill();
+    }
 }
 
 
@@ -632,10 +668,22 @@ var enemy3 = new Enemy("ghost", 250, 450);
 enemy3.draw();
 scene.push(enemy3);
 
-var gravityArray = [player1, enemy1, enemy2, enemy3];
+var enemy4 = new Enemy("ghost", 2000, 450);
+enemy4.draw();
+scene.push(enemy4);
+
+var enemy5 = new Enemy("eye", 2300, 450);
+enemy5.draw();
+scene.push(enemy5);
+
+var levEnd = new levelEnd(3500, 400);
+levEnd.draw();
+scene.push(levEnd);
+
+var gravityArray = [player1, enemy1, enemy2, enemy3, enemy4, enemy5];
 var gravity = new Gravity(gravityArray);
 
-var enemy = [enemy1, enemy2, enemy3];
+var enemy = [enemy1, enemy2, enemy3, enemy4, enemy5];
 
 // Add clouds
 var cloud = [];
@@ -649,6 +697,7 @@ for(var i = 0; i < 6; i++) {
 
 
 var UI = new UserInterface();
+var timeLeft = 90000;
 
 // Load Map
 var lev = new Level;
@@ -665,79 +714,94 @@ function gameLoop(){
         msDiff = timeNow - prevLoopTime;
 
     // Calculate and display fps every five frames
-    if(frameNumber % 5 == 0) {
-        fpsMeter.value = Math.round(1000/msDiff);
-    }
+//    if(frameNumber % 5 == 0) {
+//        fpsMeter.value = Math.round(1000/msDiff);
+//    }
 
 
+    if(collisionTest(player1, levEnd)) {
+        UI.gameOver(timer.value / 1000, true);
+    } else {
 
-    // The loop goes through all the objects in the scene array, and asks them to redraw themselves
-    // it also contains the gravity and collisions logic
-    context.clearRect(0, 0, canvas.width, canvas.height);
+        timeLeft -= msDiff;
+        timer.value = Math.round(timeLeft / 1000);
 
-    UI.drawHealth(player1.health);
+        // The loop goes through all the objects in the scene array, and asks them to redraw themselves
+        // it also contains the gravity and collisions logic
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        UI.drawHealth(player1.health);
 
 
-    for(var i = 0, l = scene.length; i < l; i++){
-        scene[i].draw();
+        for(var i = 0, l = scene.length; i < l; i++){
+            scene[i].draw();
 
-        if(findTileAtCoords(player1.x + player1.w/2, player1.y + player1.h + 1) !== undefined) {
-            if(findTileAtCoords(player1.x + player1.w/2, player1.y + player1.h + 1).collision == false) {
-                player1.collide = false;
+            if(findTileAtCoords(player1.x + player1.w/2, player1.y + player1.h + 1) !== undefined) {
+                if(findTileAtCoords(player1.x + player1.w/2, player1.y + player1.h + 1).collision == false) {
+                    player1.collide = false;
+                }
+            }
+
+            for(var e = 0; e < enemy.length; e++) {
+                if(enemy[e] !== null) {
+                    if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h) !== undefined) {
+                        if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h).collision == true) {
+                            enemy[e].move(0, -42);
+                        }
+                    }
+
+                    if(player1.health > 0) {
+                        if(collisionTest(enemy[e], player1) && timer.value > 0) {
+                            player1.health -= 0.001;
+                        } else if(player1.health <= 100) {
+                            // health regen
+                            player1.health += 0.0001;
+                        }
+                    } else {
+                        // player died
+                        UI.gameOver(0, false);
+                        break;
+                    }
+
+                    // check if bullets collide with enemies
+                    for(var b = 0; b < player1.bullets.length; b++) {
+                        if(collisionTest(player1.bullets[b], enemy[e])) {
+                            player1.bullets.splice(0,1);
+                            enemy[e].dead = true;
+                            enemy.splice(e, 1);
+                            score += 100;
+                        }
+                    }
+                }
+            }
+
+            if(scene[i].collide == false) {
+                scene[i].gravity(scene[i].GRAVITATIONAL_ACCELERATION);
+                scene[i].lastMovement = "down";
             }
         }
+
+
+        groundCollision(gravityArray);
+        drawClouds();
+        drawBullets();
+        //gravity.apply(GRAVITATIONAL_ACCELERATION * (msDiff/1000));
+        levelDataText.scrollTop = levelDataText.scrollHeight;
 
         for(var e = 0; e < enemy.length; e++) {
-            if(enemy[e] !== null) {
-                if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h) !== undefined) {
-                    if(findTileAtCoords(enemy[e].x + (enemy[e].w/2), enemy[e].y + enemy[e].h).collision == true) {
-                        enemy[e].move(0, -42);
-                    }
-                }
-
-                if(player1.health > 0) {
-                    if(collisionTest(enemy[e], player1)) {
-                        player1.health -= 0.001;
-                    } else if(player1.health <= 100) {
-                        // health regen
-                        player1.health += 0.0001;
-                    }
-                } else {
-                    UI.gameOver();
-                }
-
-                // check if bullets collide with enemies
-                for(var b = 0; b < player1.bullets.length; b++) {
-                    if(collisionTest(player1.bullets[b], enemy[e])) {
-                        player1.bullets.splice(0,1);
-                        enemy[e].dead = true;
-                        enemy.splice(e, 1);
-                    }
-                }
-            }
+            enemy[e].enableAI(frameNumber, 200);
         }
 
-        if(scene[i].collide == false) {
-            scene[i].gravity(scene[i].GRAVITATIONAL_ACCELERATION);
-            scene[i].lastMovement = "down";
+        if(timer.value < 0) {
+            // player ran out of time
+            UI.gameOver(0, false);
         }
+
+        // WAIT
+        prevLoopTime = timeNow;
+        requestAnimFrame(gameLoop);
+        frameNumber++;
     }
-
-
-    groundCollision(gravityArray);
-    drawClouds();
-    drawBullets();
-    //gravity.apply(GRAVITATIONAL_ACCELERATION * (msDiff/1000));
-    levelDataText.scrollTop = levelDataText.scrollHeight;
-
-    for(var e = 0; e < enemy.length; e++) {
-        enemy[e].enableAI(frameNumber, 200);
-    }
-
-    // WAIT
-    prevLoopTime = timeNow;
-    requestAnimFrame(gameLoop);
-    frameNumber++;
 }
 gameLoop();
 
