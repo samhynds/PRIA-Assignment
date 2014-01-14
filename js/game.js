@@ -449,7 +449,7 @@ function Enemy(type, x, y, w, h) {
         if(changeDirection == 0) {
             // Inverse the number
             this.movementDirection *= -1;
-            console.log("change direction!");
+            //console.log("change direction!");
         }
 
         var distanceToPlayer = player1.x - this.x;
