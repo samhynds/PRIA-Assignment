@@ -53,12 +53,12 @@ function Level() {
 
         // Change this if possible! 15 is hardcoded as the number of arrays in the JSON object
         // This should be calculated from the object, something like: levelData.length
-        levelDataText.value += "Attempting Loop of levelData \n";
+//        levelDataText.value += "Attempting Loop of levelData \n";
         for(var Yi = 1; Yi <= 15; Yi++) {
 
             // First loop goes through each row
             if(levelData[Yi].length !== 0) {
-                levelDataText.value += "\n\nRow " + Yi + "\n";
+//                levelDataText.value += "\n\nRow " + Yi + "\n";
             }
 
             for(var Xi = 0; Xi < levelData[Yi].length; Xi++) {
@@ -68,8 +68,8 @@ function Level() {
 
                 // Second loop goes through each value in that row
                 if(levelData[Yi].length !== 0) {
-                    levelDataText.value += Xi + ": " + levelData[Yi][Xi] + " => " + this.numToTile(levelData[Yi][Xi])
-                     +  " || Will be drawn at:" + x + ", " + y + " || \n";
+//                    levelDataText.value += Xi + ": " + levelData[Yi][Xi] + " => " + this.numToTile(levelData[Yi][Xi])
+//                     +  " || Will be drawn at:" + x + ", " + y + " || \n";
                     var tile = new Tile(this.numToTile(levelData[Yi][Xi]), x, y);
                     tile.draw();
                     scene.push(tile);
@@ -449,7 +449,7 @@ function Enemy(type, x, y, w, h) {
         if(changeDirection == 0) {
             // Inverse the number
             this.movementDirection *= -1;
-            //console.log("change direction!");
+            console.log("change direction!");
         }
 
         var distanceToPlayer = player1.x - this.x;
@@ -585,7 +585,7 @@ function checkCollisions() {
     for(var i = 0, l = scene.length; i < l; i++){
         if(i > 0 && scene[i].collision == true) {
             if(collisionTest( scene[i].collision, scene[i])) {
-                levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name +  " [" + i + "] " + scene[i].type + "\n\n";
+//                levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name +  " [" + i + "] " + scene[i].type + "\n\n";
 
                 scene[i].oppositeMove(scene[i].lastMovement);
                 //gravity.disable();
@@ -616,7 +616,7 @@ function groundCollision(object) {
     for(var i = 0, l = scene.length; i < l; i++){
         if(i > 0 && scene[i].collision == true) {
             if(collisionTest(player1, scene[i])) {
-                levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name +  " [" + i + "] " + scene[i].type + "\n\n";
+//                levelDataText.value += "Collision detected [f: " + frameNumber + "] : player 1 and " + scene[i].constructor.name +  " [" + i + "] " + scene[i].type + "\n\n";
                 player1.oppositeMove(player1.lastMovement);
                 for(var j = 0; j < object.length; j++) {
                     object[j].collide = true;
@@ -760,6 +760,7 @@ function gameLoop(){
                     } else {
                         // player died
                         UI.gameOver(0, false);
+                        cloud = [];
                         break;
                     }
 
@@ -786,7 +787,7 @@ function gameLoop(){
         drawClouds();
         drawBullets();
         //gravity.apply(GRAVITATIONAL_ACCELERATION * (msDiff/1000));
-        levelDataText.scrollTop = levelDataText.scrollHeight;
+//        levelDataText.scrollTop = levelDataText.scrollHeight;
 
         for(var e = 0; e < enemy.length; e++) {
             enemy[e].enableAI(frameNumber, 200);
